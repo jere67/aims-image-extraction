@@ -1,3 +1,7 @@
 PyMuPDF
 requests
 beautifulsoup4
+torch
+torchvision
+sentence-transformers
+Pillow
