@@ -426,14 +426,23 @@ def main():
                 'visual_similarity_score': result['similarity_score'],
                 'decision_reason': result['reason']
             }
-            classification_log.append(log_entry)
+
+            # Update classification_log.json for logging purposes
+            log_filename = "classification_log.json"
+            try:
+                if os.path.exists(log_filename) and os.path.getsize(log_filename) > 0:
+                    with open(log_filename, 'r', encoding='utf-8') as f:
+                        logs = json.load(f)
+                else:
+                    logs = []
+                
+                logs.append(log_entry)
+                with open(log_filename, 'w', encoding='utf-8') as f:
+                    json.dump(logs, f, indent=2)
+            except (IOError, json.JSONDecodeError) as e:
+                print(f"ERROR: Could not update log file {log_filename}: {e}")
             
             image_counter += 1
-    
-    # Save detailed classification log
-    log_filename = "classification_log.json"
-    with open(log_filename, 'w', encoding='utf-8') as f:
-        json.dump(classification_log, f, indent=2)
     
     # Print summary
     print("\n" + "=" * 60)
