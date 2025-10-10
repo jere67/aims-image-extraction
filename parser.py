@@ -455,10 +455,6 @@ def main():
         print(f"Percentage of images filtered out: {percentage_filtered:.2f}%")
     else:
         print("Percentage of images filtered out: 0.00%")
-    print(f"Total images saved: {len(classification_log)}")
-    print(f"Metadata file: {metadata_filename}")
-    print(f"Classification log: {log_filename}")
-    print(f"Images saved to: {master_output_dir}/")
     print("=" * 60)
 
 
