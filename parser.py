@@ -281,7 +281,7 @@ def extract_pdf_data(pdf_path, classifier, processed_hashes):
         doc = fitz.open(pdf_path)
     except Exception as e:
         print(f"ERROR: Cannot open PDF - {e}")
-        return approved_images
+        return approved_images, 0
 
     doi = get_pdf_doi(doc)
     if doi:
@@ -337,7 +337,7 @@ def extract_pdf_data(pdf_path, classifier, processed_hashes):
 
     doc.close()
     print(f"  Found {len(approved_images)} approved images from {total_images} total images")
-    return approved_images
+    return approved_images, total_images
 
 
 def main():
@@ -364,6 +364,10 @@ def main():
     processed_hashes = set()
     image_counter = 1
     classification_log = []
+
+    # Add counters for total images processed and filtered
+    total_images_processed = 0
+    total_images_approved = 0
     
     # Find PDFs to process
     pdf_dir = "pdf_files"
@@ -382,7 +386,9 @@ def main():
     # Process each PDF
     for pdf_filename in pdf_files:
         pdf_path = os.path.join(pdf_dir, pdf_filename)
-        approved_images = extract_pdf_data(pdf_path, classifier, processed_hashes)
+        approved_images, images_in_pdf = extract_pdf_data(pdf_path, classifier, processed_hashes)
+        total_images_processed += images_in_pdf
+        total_images_approved += len(approved_images)
         
         # Save approved images
         for image_data in approved_images:
@@ -433,6 +439,8 @@ def main():
     print("\n" + "=" * 60)
     print("PROCESSING COMPLETE")
     print("=" * 60)
+    print(f"Total images processed: {total_images_processed}")
+    print(f"Total images approved: {total_images_approved}")
     print(f"Total images saved: {len(classification_log)}")
     print(f"Metadata file: {metadata_filename}")
     print(f"Classification log: {log_filename}")
