@@ -441,6 +441,11 @@ def main():
     print("=" * 60)
     print(f"Total images processed: {total_images_processed}")
     print(f"Total images approved: {total_images_approved}")
+    if total_images_processed > 0:
+        percentage_filtered = ((total_images_processed - total_images_approved) / total_images_processed) * 100
+        print(f"Percentage of images filtered out: {percentage_filtered:.2f}%")
+    else:
+        print("Percentage of images filtered out: 0.00%")
     print(f"Total images saved: {len(classification_log)}")
     print(f"Metadata file: {metadata_filename}")
     print(f"Classification log: {log_filename}")
