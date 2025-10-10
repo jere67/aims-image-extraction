@@ -5,7 +5,7 @@
 ```
 git clone git@github.com:jere67/aims-image-extraction.git
 ```
-1. Download `reference_images` and `pdf_files` from Slack
+1. Download `reference_images` from Slack and add them to your local working directory. Please also create a  `pdf_files` directory and add your PDFs you downloaded there.
 2. Create Python Virtual Environment
 ```
 python3 -m venv env

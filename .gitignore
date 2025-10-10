@@ -1,5 +1,10 @@
+# Directories
 env/
 pdf_files/
 reference_images/
 saved/
+
+# Files
 website_links.txt
+classification_log.json
+metadata.csv
