@@ -20,5 +20,5 @@ pip install -r requirements.txt
 ```
 5. Run Parser Script
 ```
-python scraper.py
+python parser.py
 ```
