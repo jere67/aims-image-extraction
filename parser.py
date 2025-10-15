@@ -12,14 +12,24 @@ import numpy as np
 
 # REPLACE WITH YOUR UNIQNAME
 USERNAME_PREFIX = "jeremoon"
+PDF_DIR = "pdf_files/"
+REFERENCE_DIR = "reference_images/"
 
 class ImageClassifier:
     """
     A multi-stage classifier using an expanded semantic vocabulary and a strict,
     multi-condition filter that combines text and visual similarity for maximum accuracy.
     """
-    def __init__(self, model_name='clip-ViT-L-14', reference_dir='reference_images/'):
-        self.model = SentenceTransformer(model_name)
+    def __init__(self, model_name='clip-ViT-L-14', reference_dir=REFERENCE_DIR):
+        if torch.cuda.is_available():
+            self.device = 'cuda'
+        elif torch.backends.mps.is_available():  # For Apple Silicon (M1/M2/M3)
+            self.device = 'mps'
+        else:
+            self.device = 'cpu'
+        
+        print(f"PASS: Device selected: {self.device.upper()}")
+        self.model = SentenceTransformer(model_name, device=self.device)
         
         # --- Model Hyperparameters (GOAL: prioritize recall over precision) ---
         self.keep_threshold = 0.20
@@ -370,22 +380,21 @@ def main():
     total_images_approved = 0
     
     # Find PDFs to process
-    pdf_dir = "pdf_files"
-    if not os.path.isdir(pdf_dir):
-        print(f"\nERROR: Directory '{pdf_dir}' not found!")
+    if not os.path.isdir(PDF_DIR):
+        print(f"\nERROR: Directory '{PDF_DIR}' not found!")
         print("Please create 'pdf_files/' directory and add PDF files.")
         return
     
-    pdf_files = [f for f in os.listdir(pdf_dir) if f.lower().endswith('.pdf')]
+    pdf_files = [f for f in os.listdir(PDF_DIR) if f.lower().endswith('.pdf')]
     if not pdf_files:
-        print(f"\nERROR: No PDF files found in '{pdf_dir}'")
+        print(f"\nERROR: No PDF files found in '{PDF_DIR}'")
         return
     
     print(f"\nPASS: Found {len(pdf_files)} PDF files to process")
     
     # Process each PDF
     for pdf_filename in pdf_files:
-        pdf_path = os.path.join(pdf_dir, pdf_filename)
+        pdf_path = os.path.join(PDF_DIR, pdf_filename)
         approved_images, images_in_pdf = extract_pdf_data(pdf_path, classifier, processed_hashes)
         total_images_processed += images_in_pdf
         total_images_approved += len(approved_images)
