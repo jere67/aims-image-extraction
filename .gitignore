@@ -3,6 +3,7 @@ env/
 pdf_files/
 reference_images/
 saved/
+downloaded_files/
 
 # Files
 website_links.txt
