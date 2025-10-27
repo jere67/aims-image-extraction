@@ -1,6 +1,6 @@
 # AIMS Image Extraction
 
-## Onboarding Steps
+## parser.py Fresh Onboarding Steps
 0. Clone repo to local
 ```
 git clone git@github.com:jere67/aims-image-extraction.git
@@ -28,4 +28,34 @@ There are three variables thatwill need to be adjusted.
 6. Run Parser Script
 ```
 python parser.py
+```
+
+## binary_classifier.py Fresh Onboarding Steps
+0. Clone repo to local 
+```
+git clone git@github.com:jere67/aims-image-extraction.git
+```
+1. Download `training_data/` and `plots.csv` from Slack and add them to your local working directory.
+2. Create Python Virtual Environment 
+```
+python3 -m venv env
+```
+3. Activate Virtual Environment
+```
+source -m env/bin/activate
+```
+4. Install required packages
+```
+pip install -r requirements.txt
+```
+5. Modify classification script variables with correct information
+
+There are two variables that may need to be adjusted. 
+- `INPUT_DIR`: replace with the directory where your filtered images are saved. The default is `training_data/`. 
+- `LABELS_FILE`: replace with the file name where you labelled the training data. The default is `plots.csv`. 
+You can leave the other configuration variables as default. Feel free to change them as you wish. 
+
+6. Run Parser Script
+```
+python binary_classifier.py
 ```
