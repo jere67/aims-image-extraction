@@ -18,7 +18,14 @@ source -m env/bin/activate
 ```
 pip install -r requirements.txt
 ```
-5. Run Parser Script
+5. Modify Parser Script variables with correct information
+
+There are three variables thatwill need to be adjusted. 
+- `USERNAME_PREFIX`: replace with your uniqname. This will generate image filenames of the format `YOUR_UNIQNAME_1.png`.
+- `PDF_DIR`: replace with the directory name where your PDF files are stored. The default is `pdf_files/`. 
+- `REFERENCE_DIR`: replace with the directory name where your reference images are stored (images can be found on Slack. Please contact me if you cannot find them). This will allow the parser to do a similarity check to the reference images for better classification. 
+
+6. Run Parser Script
 ```
 python parser.py
 ```
