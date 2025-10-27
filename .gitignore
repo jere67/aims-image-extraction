@@ -4,8 +4,14 @@ pdf_files/
 reference_images/
 saved/
 downloaded_files/
+training_data/
+final_images
 
 # Files
 website_links.txt
 classification_log.json
 metadata.csv
+plot_classification_log.json
+plot_classifier_model.pth
+plots.csv
+training_history.json
