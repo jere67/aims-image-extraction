@@ -5,6 +5,11 @@
 ```
 git clone git@github.com:jere67/aims-image-extraction.git
 ```
+
+And change our working directory:
+```
+cd aims-image-extraction
+```
 1. Download `reference_images` from Slack and add them to your local working directory. Please also create a  `pdf_files` directory and add your PDFs you downloaded there.
 2. Create Python Virtual Environment
 ```
