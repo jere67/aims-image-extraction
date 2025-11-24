@@ -5,13 +5,27 @@ reference_images/
 saved/
 downloaded_files/
 training_data/
-final_images
+final_images/
+images/
+final_output/
+gpt_4_1_nano_approved/
+dataset/
+
+# Python
+*.pyc
+__pycache__/
+*.egg-info*
+dist/
+env/
+venv/
+venv3/
+.venv/
+.pytest_cache
 
 # Files
-website_links.txt
-classification_log.json
-metadata.csv
-plot_classification_log.json
-plot_classifier_model.pth
-plots.csv
-training_history.json
+*.txt
+*.json
+*.csv
+*.png
+*.pth
+.env
