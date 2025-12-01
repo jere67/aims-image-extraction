@@ -33,21 +33,45 @@ def _encode_image_to_base64(image_path: str):
         print(f"ERROR: Could not encode image {image_path}: {e}")
         return None
 
-def classify_image_with_gpt(image_path: str, model_name: str, system_prompt: str):
+def classify_images_with_gpt(image_paths: list[str], model_name: str, system_prompt: str):
     """
-    Classifies a single image using a specified GPT model and system prompt.
+    Classifies a batch of images using a specified GPT model and system prompt.
 
     Args:
-        image_path (str): The local path to the image file.
+        image_paths (list[str]): A list of local paths to the image files.
         model_name (str): The name of the GPT model to use (e.g., "gpt-4.1-nano").
         system_prompt (str): The detailed instructions for the model.
 
     Returns:
-        dict: A dictionary containing the classification result or an error message.
+        dict: A dictionary containing the classification results (keyed by filename) or an error message.
     """
-    base64_image = _encode_image_to_base64(image_path)
-    if not base64_image:
-        return {"error": f"Failed to encode image at {image_path}"}
+    user_content = [
+        {
+            "type": "text",
+            "text": "Please classify the following images according to the system instructions. Return a JSON object where keys are the filenames and values are the classification results."
+        }
+    ]
+
+    for image_path in image_paths:
+        base64_image = _encode_image_to_base64(image_path)
+        if not base64_image:
+            print(f"WARNING: Failed to encode image at {image_path}. Skipping this image in batch.")
+            continue
+        
+        filename = os.path.basename(image_path)
+        user_content.append({
+            "type": "text",
+            "text": f"Image Filename: {filename}"
+        })
+        user_content.append({
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:image/jpeg;base64,{base64_image}"
+            }
+        })
+
+    if len(user_content) == 1: # Only the initial text instruction exists
+        return {"error": "No valid images to classify in this batch."}
 
     try:
         api_params = {
@@ -59,18 +83,7 @@ def classify_image_with_gpt(image_path: str, model_name: str, system_prompt: str
                 },
                 {
                     "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "Please classify the following image according to the system instructions."
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                    ]
+                    "content": user_content
                 }
             ],
             "response_format": {"type": "json_object"},

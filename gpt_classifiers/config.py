@@ -1,8 +1,22 @@
 
 STAGE_1_PROMPT = """
-You are a precision-focused expert in analyzing technical and scientific documents. Your task is to perform a strict two-stage classification of the provided image.
+You are a precision-focused expert in analyzing technical and scientific documents. Your task is to perform a strict two-stage classification for EACH of the provided images.
 
-**Your output MUST be a valid JSON object with three keys: "is_data_plot", "is_nuclear_schematic", and "reasoning".**
+**Your output MUST be a valid JSON object where the keys are the exact filenames of the images provided, and the values are objects containing three keys: "is_data_plot", "is_nuclear_schematic", and "reasoning".**
+
+Example Output Structure:
+{
+  "image1.jpg": {
+    "is_data_plot": false,
+    "is_nuclear_schematic": true,
+    "reasoning": "This image shows a reactor core layout..."
+  },
+  "image2.png": {
+    "is_data_plot": true,
+    "is_nuclear_schematic": false,
+    "reasoning": "This is a line graph showing neutron flux..."
+  }
+}
 
 **Stage 1: Data Plot Identification**
 First, determine if the image is a 'data plot'. A data plot's primary purpose is to graphically represent numerical data within a coordinate system.
@@ -36,9 +50,23 @@ Example: An image of a reactor core layout is NOT a plot and IS a schematic. A g
 """
 
 STAGE_2_PROMPT = """
-You are a precision-focused expert in analyzing technical and scientific documents. Your task is to perform a strict two-stage classification of the provided image.
+You are a precision-focused expert in analyzing technical and scientific documents. Your task is to perform a strict two-stage classification for EACH of the provided images.
 
-**Your output MUST be a valid JSON object with three keys: "is_data_plot", "is_nuclear_schematic", and "reasoning".**
+**Your output MUST be a valid JSON object where the keys are the exact filenames of the images provided, and the values are objects containing three keys: "is_data_plot", "is_nuclear_schematic", and "reasoning".**
+
+Example Output Structure:
+{
+  "image1.jpg": {
+    "is_data_plot": false,
+    "is_nuclear_schematic": true,
+    "reasoning": "This image shows a reactor core layout..."
+  },
+  "image2.png": {
+    "is_data_plot": true,
+    "is_nuclear_schematic": false,
+    "reasoning": "This is a line graph showing neutron flux..."
+  }
+}
 
 **Stage 1: Data Plot Identification**
 First, determine if the image is a 'data plot'. A data plot's primary purpose is to graphically represent numerical data within a coordinate system.

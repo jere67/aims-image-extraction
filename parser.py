@@ -93,6 +93,10 @@ class ImageClassifier:
         ]
         
         self.reference_embeddings = self._load_reference_images(reference_dir)
+        
+        # --- OPTIMIZATION: PRE-COMPUTE TEXT EMBEDDINGS---
+        self.keep_embeddings = self.model.encode(self.keep_labels, convert_to_tensor=True)
+        self.reject_embeddings = self.model.encode(self.reject_labels, convert_to_tensor=True)
 
     def _load_reference_images(self, reference_dir):
         """Load and embed reference images for visual similarity comparison."""
@@ -119,8 +123,20 @@ class ImageClassifier:
             print("WARNING: No reference images loaded. Visual filtering disabled.")
             return None
 
-    def classify_image(self, image_bytes):
-        """Classify an image using improved dual-scoring logic. Returns dict with decision, scores, and reasoning."""
+    def encode_batch(self, images):
+        """Encodes a list of PIL images in one batch."""
+        if not images:
+            return None
+        return self.model.encode(images, convert_to_tensor=True)
+
+    def classify_image(self, image_input, embedding=None):
+        """
+        Classify an image using improved dual-scoring logic. 
+        Args:
+            image_input: Either raw bytes or a PIL Image object (batch).
+            embedding: Pre-computed embedding tensor (optional).
+        Returns dict with decision, scores, and reasoning.
+        """
         result = {
             'decision': False,
             'keep_label': 'N/A',
@@ -132,9 +148,15 @@ class ImageClassifier:
         }
         
         try:
-            # Load and encode image
-            image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-            image_embedding = self.model.encode(image, convert_to_tensor=True)
+            if isinstance(image_input, bytes):
+                image = Image.open(io.BytesIO(image_input)).convert('RGB')
+            else:
+                image = image_input
+
+            if embedding is not None:
+                image_embedding = embedding
+            else:
+                image_embedding = self.model.encode(image, convert_to_tensor=True)
 
             # --- PRELIMINARY IMAGE QUALITY CHECKS ---
             width, height = image.size
@@ -158,16 +180,11 @@ class ImageClassifier:
                 return result
             
             # --- DUAL TEXT CLASSIFICATION ---
-            # Score separately against keep and reject categories
-            keep_embeddings = self.model.encode(self.keep_labels, convert_to_tensor=True)
-            reject_embeddings = self.model.encode(self.reject_labels, convert_to_tensor=True)
-            
-            # Primary mechanism: Cosine Similarity (TODO: possible area for improvement, other similarity metrics could be used here.)
             keep_similarities = torch.nn.functional.cosine_similarity(
-                image_embedding.unsqueeze(0), keep_embeddings
+                image_embedding.unsqueeze(0), self.keep_embeddings
             )
             reject_similarities = torch.nn.functional.cosine_similarity(
-                image_embedding.unsqueeze(0), reject_embeddings
+                image_embedding.unsqueeze(0), self.reject_embeddings
             )
             
             max_keep_score = keep_similarities.max().item()
@@ -239,7 +256,7 @@ def get_pdf_doi(doc):
     return None
 
 
-def extract_caption_near_image(page, img_bbox, max_distance=300):
+def extract_caption_near_image(page, img_bbox, page_blocks, max_distance=300):
     """Enhanced caption extraction using spatial proximity and pattern matching. Searches below the image for text starting with Fig/Figure/Table."""
     # Define search region below image
     search_rect = fitz.Rect(
@@ -249,8 +266,12 @@ def extract_caption_near_image(page, img_bbox, max_distance=300):
         img_bbox.y1 + max_distance  # Search downward
     )
     
-    # Extract text blocks contained in search region
-    blocks = page.get_text("blocks", clip=search_rect)
+    # Filter pre-fetched blocks based on coordinates manually
+    blocks = [
+        b for b in page_blocks 
+        if (search_rect.x0 < b[0] < search_rect.x1) and # X check (simplified intersection)
+           (search_rect.y0 < b[1] < search_rect.y1)     # Y check
+    ]
     
     potential_captions = []
     caption_pattern = re.compile(
@@ -300,13 +321,28 @@ def extract_pdf_data(pdf_path, classifier, processed_hashes):
     total_images = 0
     for page_num in range(len(doc)):
         page = doc.load_page(page_num)
+        
+        # --- OPTIMIZATION: Get text blocks once per page ---
+        page_blocks = page.get_text("blocks")
+        
         images = page.get_images(full=True)
         total_images += len(images)
         
-        for img_index, img in enumerate(images):
+        # Collect valid images for this page
+        page_image_candidates = []
+        
+        for img_index, img in enumerate(images):  # img is a tuple: (xref, smask, width, height, bpc, colorspace, ...)
+            xref = img[0]
+            width = img[2]
+            height = img[3]
+            
+            # --- OPTIMIZATION: Filter before extraction ---
+            if width < 100 or height < 100:
+                continue
+            
             try:
                 # Extract image data
-                base_image = doc.extract_image(img[0])
+                base_image = doc.extract_image(xref)
                 image_bytes = base_image["image"]
                 
                 # Check for duplicates in hashset
@@ -314,36 +350,64 @@ def extract_pdf_data(pdf_path, classifier, processed_hashes):
                 if image_hash in processed_hashes:
                     continue
                 
-                # Classify image
-                classification_result = classifier.classify_image(image_bytes)
+                # Convert to PIL for batch encoding
+                pil_image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
                 
-                if not classification_result['decision']:
-                    print(f"DEBUG - Page {page_num + 1}, Image {img_index + 1}: {classification_result['reason']}")
-                    continue
-                
-                # Mark as processed
-                processed_hashes.add(image_hash)
-                
-                # Extract caption
-                img_bbox = page.get_image_bbox(img)
-                caption = extract_caption_near_image(page, img_bbox)
-                
-                approved_images.append({
-                    "image_bytes": image_bytes,
-                    "caption": caption,
-                    "doi": doi,
-                    "extension": base_image['ext'],
-                    "page_num": page_num + 1,
-                    "classification_result": classification_result
+                page_image_candidates.append({
+                    'index': img_index,
+                    'xref': xref,
+                    'bytes': image_bytes,
+                    'hash': image_hash,
+                    'pil': pil_image,
+                    'ext': base_image['ext'],
+                    'img_obj': img
                 })
                 
-                print(f"  ✓ Page {page_num + 1}, Image {img_index + 1}: APPROVED")
-                print(f"    Keep score: {classification_result['keep_score']}, Visual: {classification_result['similarity_score']}")
-                print(f"    Caption: {caption[:80]}...")
-                
             except Exception as e:
-                print(f"  WARNING: Error processing image on page {page_num + 1}: {e}")
+                 print(f"  WARNING: Error extracting image {img_index + 1} on page {page_num + 1}: {e}")
+                 continue
+
+        if not page_image_candidates:
+            continue
+
+        # --- OPTIMIZATION: Batch Inference ---
+        pil_images = [c['pil'] for c in page_image_candidates]
+        try:
+            batch_embeddings = classifier.encode_batch(pil_images)
+        except Exception as e:
+            print(f"  WARNING: Batch encoding failed on page {page_num + 1}: {e}")
+            continue
+
+        # Process results
+        for i, candidate in enumerate(page_image_candidates):
+            embedding = batch_embeddings[i]
+            
+            # Classify using pre-computed embedding
+            classification_result = classifier.classify_image(candidate['pil'], embedding=embedding)
+            
+            if not classification_result['decision']:
+                print(f"DEBUG - Page {page_num + 1}, Image {candidate['index'] + 1}: {classification_result['reason']}")
                 continue
+            
+            # Mark as processed
+            processed_hashes.add(candidate['hash'])
+            
+            # Extract caption using cached blocks
+            img_bbox = page.get_image_bbox(candidate['img_obj'])
+            caption = extract_caption_near_image(page, img_bbox, page_blocks)
+            
+            approved_images.append({
+                "image_bytes": candidate['bytes'],
+                "caption": caption,
+                "doi": doi,
+                "extension": candidate['ext'],
+                "page_num": page_num + 1,
+                "classification_result": classification_result
+            })
+            
+            print(f"  ✓ Page {page_num + 1}, Image {candidate['index'] + 1}: APPROVED")
+            print(f"    Keep score: {classification_result['keep_score']}, Visual: {classification_result['similarity_score']}")
+            print(f"    Caption: {caption[:80]}...")
 
     doc.close()
     print(f"  Found {len(approved_images)} approved images from {total_images} total images")
@@ -465,7 +529,8 @@ def main():
     else:
         print("Percentage of images filtered out: 0.00%")
     print("=" * 60)
-
+    
+    return total_images_processed, total_images_approved
 
 if __name__ == "__main__":
     main()
