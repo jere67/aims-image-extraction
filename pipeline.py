@@ -417,6 +417,8 @@ def print_pipeline_summary(stage1_metrics, stage2_metrics, stage3_metrics, total
     if final_images > 0:
         print(f"Cost per final image: ${total_cost/final_images:.4f}")
     print(f"Final images saved: {final_images}")
+    if stage1_metrics:
+        print(f"Total reduction: {stage1_metrics['images_input'] - final_images / stage1_metrics['images_input'] * 100:.2f}%")
     print("="*70)
 
 def main():
