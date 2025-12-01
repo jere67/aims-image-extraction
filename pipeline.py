@@ -126,7 +126,7 @@ def run_stage2_gpt_4_1_nano():
     chunks = [df_filtered[i:i + BATCH_SIZE] for i in range(0, df_filtered.shape[0], BATCH_SIZE)]
 
     for chunk in tqdm(chunks, desc="GPT-4.1-Nano (Batched)"):
-        start_time = time.time()
+        batch_start_time = time.time()
         
         batch_image_paths = []
         batch_rows = []
@@ -178,7 +178,7 @@ def run_stage2_gpt_4_1_nano():
             error_msg = res.get('error', 'Unknown error') if res else 'No response'
             tqdm.write(f"BATCH ERROR: {error_msg}")
 
-        elapsed_time = time.time() - start_time
+        elapsed_time = time.time() - batch_start_time
         sleep_needed = max(0, API_CALL_DELAY_SECONDS - elapsed_time)
         time.sleep(sleep_needed)
 
@@ -261,7 +261,7 @@ def run_stage3_gpt_5_nano():
     chunks = [df_filtered[i:i + BATCH_SIZE] for i in range(0, df_filtered.shape[0], BATCH_SIZE)]
 
     for chunk in tqdm(chunks, desc="GPT-5-Nano (Batched)"):
-        start_time = time.time()
+        batch_start_time = time.time()
         
         batch_image_paths = []
         batch_rows = []
@@ -314,7 +314,7 @@ def run_stage3_gpt_5_nano():
              error_msg = res.get('error', 'Unknown error') if res else 'No response'
              tqdm.write(f"BATCH ERROR: {error_msg}")
 
-        elapsed_time = time.time() - start_time
+        elapsed_time = time.time() - batch_start_time
         sleep_needed = max(0, API_CALL_DELAY_SECONDS - elapsed_time)
         time.sleep(sleep_needed)
 
