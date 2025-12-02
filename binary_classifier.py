@@ -10,16 +10,17 @@ import pandas as pd
 import json
 from tqdm import tqdm
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 import warnings
 
 warnings.filterwarnings('ignore')
 
 # --- Configuration ---
-INPUT_DIR = "training_data/"
+TRAIN_DIR = "dataset/train/"
+TEST_DIR = "dataset/test/"
+TRAIN_LABELS = "dataset/train.csv"
+TEST_LABELS = "dataset/test.csv"
 OUTPUT_DIR = "final_images/"
-LABELS_FILE = "plots.csv"
 LOG_FILE = "plot_classification_log.json"
 MODEL_SAVE_PATH = "plot_classifier_model.pth"
 
@@ -29,7 +30,7 @@ BATCH_SIZE = 16
 IMG_SIZE = 224
 NUM_EPOCHS = 16
 LEARNING_RATE = 0.0001
-VALIDATION_SPLIT = 0.2
+
 
 class PlotDataset(Dataset):
     """Custom dataset for loading labeled images."""
@@ -378,8 +379,10 @@ def load_labeled_data(labels_file, input_dir):
     """Load labeled data from CSV file."""
     print(f"Loading labels from {labels_file}...")
     
-    df = pd.read_csv(labels_file, header=None, names=['filename', 'isPlot'])
-    
+    df = pd.read_csv(labels_file)
+    if 'filename' not in df.columns or 'label' not in df.columns:
+         pass
+
     # Build full paths and filter existing files
     image_paths = []
     labels = []
@@ -389,18 +392,18 @@ def load_labeled_data(labels_file, input_dir):
         filepath = os.path.join(input_dir, row['filename'])
         if os.path.exists(filepath):
             image_paths.append(filepath)
-            labels.append(int(row['isPlot']))
+            labels.append(int(row['label']))
         else:
             missing_files.append(row['filename'])
     
     if missing_files:
         print(f"WARNING: {len(missing_files)} labeled files not found in {input_dir}")
     
-    print(f"Loaded {len(image_paths)} labeled images")
+    print(f"Loaded {len(image_paths)} labeled images from {input_dir}")
     print(f"  Diagrams (0): {labels.count(0)}")
     print(f"  Plots (1): {labels.count(1)}")
     
-    return image_paths, labels, set(df['filename'].tolist())
+    return image_paths, labels
 
 
 def main():
@@ -410,28 +413,27 @@ def main():
     print("=" * 60)
     
     # Check for required files
-    if not os.path.exists(LABELS_FILE):
-        print(f"\nERROR: Labels file '{LABELS_FILE}' not found!")
+    if not os.path.exists(TRAIN_LABELS):
+        print(f"\nERROR: Train labels file '{TRAIN_LABELS}' not found!")
+        return
+    if not os.path.exists(TEST_LABELS):
+        print(f"\nERROR: Test labels file '{TEST_LABELS}' not found!")
         return
     
-    if not os.path.isdir(INPUT_DIR):
-        print(f"\nERROR: Input directory '{INPUT_DIR}' not found!")
+    if not os.path.isdir(TRAIN_DIR):
+        print(f"\nERROR: Train directory '{TRAIN_DIR}' not found!")
+        return
+    if not os.path.isdir(TEST_DIR):
+        print(f"\nERROR: Test directory '{TEST_DIR}' not found!")
         return
     
     # Load labeled data
-    image_paths, labels, labeled_filenames = load_labeled_data(LABELS_FILE, INPUT_DIR)
+    train_paths, train_labels = load_labeled_data(TRAIN_LABELS, TRAIN_DIR)
+    val_paths, val_labels = load_labeled_data(TEST_LABELS, TEST_DIR)
     
-    if len(image_paths) < 10:
+    if len(train_paths) < 10:
         print("\nERROR: Need at least 10 labeled examples to train!")
         return
-    
-    # Split into train and validation sets
-    train_paths, val_paths, train_labels, val_labels = train_test_split(
-        image_paths, labels, 
-        test_size=VALIDATION_SPLIT,
-        stratify=labels,
-        random_state=42
-    )
     
     print(f"\nTrain set: {len(train_paths)} images")
     print(f"Validation set: {len(val_paths)} images")
@@ -451,24 +453,8 @@ def main():
     with open('training_history.json', 'w') as f:
         json.dump(history, f, indent=2)
     
-    # Classify remaining unlabeled images
-    print("\n" + "=" * 60)
-    print("Classifying unlabeled images...")
-    print("=" * 60)
-    
-    stats = classifier.classify_directory(INPUT_DIR, OUTPUT_DIR, labeled_filenames)
-    
-    # Print final summary
     print("\n" + "=" * 60)
     print("CLASSIFICATION COMPLETE")
-    print("=" * 60)
-    print(f"Unlabeled images classified:  {stats['total_classified']}")
-    print(f"Diagrams kept:                {stats['diagrams_kept']}")
-    print(f"Plots filtered:               {stats['plots_filtered']}")
-    print(f"Filter rate:                  {stats['filter_rate']:.1f}%")
-    print(f"\nKept diagrams saved to:       {OUTPUT_DIR}")
-    print(f"Classification log:           {LOG_FILE}")
-    print(f"Trained model saved:          {MODEL_SAVE_PATH}")
     print("=" * 60)
 
 
