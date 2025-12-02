@@ -40,11 +40,19 @@ There are three variables that will need to be adjusted in `parser.py` (stage 1)
 - `PDF_DIR`: replace with the directory name where your PDF files are stored. The default is `pdf_files/`. 
 - `REFERENCE_DIR`: replace with the directory name where your reference images are stored (images can be found on Slack. Please contact me if you cannot find them). This will allow the parser to do a similarity check to the reference images for better classification. 
 
-6. Modify pipeline variables *(optional)*
+6. Modify `.env` to include:
+```
+OPENAI_API_BASE=
+OPENAI_API_KEY=
+OPENAI_ORGANIZATION=
+API_VERSION=
+```
+
+7. Modify pipeline variables *(optional)*
 
 The name of the output directory and files can be changed under the `Configuration` heading in `pipeline.py`.
 
-7. Run pipeline.py at desired stage
+8. Run pipeline.py at desired stage
 ```
 python pipeline.py --start-stage=[1|2|3]
 ```
