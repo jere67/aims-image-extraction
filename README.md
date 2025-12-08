@@ -57,6 +57,15 @@ The name of the output directory and files can be changed under the `Configurati
 python pipeline.py --start-stage=[1|2|3]
 ```
 
+### Pipeline E2E Testing
+There exists a testing suite for the pipeline in `tests/test_pipeline_e2e.py`. To run it, use:
+```
+pytest tests/test_pipeline_e2e.py
+```
+The `tests/conftest.py` file contains the necessary fixtures for the tests.
+
+The E2E test will run the pipeline at each possible stage, and compare the output to the expected output.
+
 ## Individual Stages
 ## parser.py (Stage 1) Fresh Onboarding Steps
 0. Clone repo to local
@@ -158,3 +167,14 @@ You can leave the other configuration variables as default. Feel free to change 
 ```
 python binary_classifier.py
 ```
+
+### Individual Stage Testing
+Each individual stages has associated unit tests in the `tests` directory. To run them, use:
+```
+pytest tests/test_binary_classifier.py
+pytest tests/test_gpt_classifiers.py
+pytest tests/test_parser.py
+```
+1. The `tests/test_binary_classifier.py` file tests the binary classifier. The binary classifier is not currently in use, but it is included for reference. It tests model initialization, image classification, and image quality checks.
+2. The `tests/test_gpt_classifiers.py` file tests the GPT classifiers. It tests base64 encoding, successful API calls to GPT, and malformed (error) JSON responses.
+3. The `tests/test_parser.py` file tests the parser. It tests regex extraction of DOIs, caption extraction logic, and classifier logic.
